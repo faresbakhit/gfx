@@ -1,0 +1,7 @@
+# CMake
+CMakeUserPresets.json
+build/
+# clangd
+.cache/
+# std module
+std/
