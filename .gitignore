@@ -4,4 +4,4 @@ build/
 # clangd
 .cache/
 # std module
-std/
+std

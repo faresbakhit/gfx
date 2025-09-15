@@ -2,29 +2,18 @@ module;
 #include <cassert>
 export module gfx.vec;
 
+import gfx.meta;
 import gfx.types;
 import std;
 
-template<typename T>
-concept scalar = std::same_as<T, gfx::f32>
-    || std::same_as<T, gfx::f64>
-    || std::same_as<T, bool>
-    || std::same_as<T, gfx::i32>
-    || std::same_as<T, gfx::u32>;
-
-template<class T>
-struct undefined_constant {
-    static_assert(std::false_type(), "undefined constant");
-};
-
 export namespace gfx {
-template<scalar S>
+template<typename S>
 union vec2_t;
 
-template<scalar S>
+template<typename S>
 union vec3_t;
 
-template<scalar S>
+template<typename S>
 union vec4_t;
 
 using vec2 = vec2_t<f32>;
@@ -51,35 +40,45 @@ using uvec2 = vec2_t<u32>;
 using uvec3 = vec3_t<u32>;
 using uvec4 = vec4_t<u32>;
 
-template<typename T>
-inline constexpr T one = undefined_constant<T> {};
-template<typename T>
-inline constexpr T unit_x = undefined_constant<T> {};
-template<typename T>
-inline constexpr T unit_y = undefined_constant<T> {};
-template<typename T>
-inline constexpr T unit_z = undefined_constant<T> {};
-template<typename T>
-inline constexpr T unit_w = undefined_constant<T> {};
-template<typename T>
-inline constexpr T zero = undefined_constant<T> {};
+template<typename>
+struct is_vec : std::false_type { };
 
-/**
- * vec    abs(vec)
- * vec    clamp(vec, scalar lo, scalar hi)
- * vec3   cross(vec, vec)
- * scalar distance(vec, vec)
- * scalar distance_squared(vec, vec)
- * scalar dot(vec, vec)
- * vec    normalize(vec)
- */
+template<typename S>
+struct is_vec<vec2_t<S>> : std::true_type { };
 
-template<scalar S>
+template<typename S>
+struct is_vec<vec3_t<S>> : std::true_type { };
+
+template<typename S>
+struct is_vec<vec4_t<S>> : std::true_type { };
+
+template<typename S>
+concept vec = is_vec<S>::value;
+
+template<typename T>
+inline constexpr T epsilon = undefined<T> {};
+template<typename T>
+inline constexpr T one = undefined<T> {};
+template<typename T>
+inline constexpr T unit_x = undefined<T> {};
+template<typename T>
+inline constexpr T unit_y = undefined<T> {};
+template<typename T>
+inline constexpr T unit_z = undefined<T> {};
+template<typename T>
+inline constexpr T unit_w = undefined<T> {};
+template<typename T>
+inline constexpr T zero = undefined<T> {};
+
+template<typename S>
 union vec2_t {
 private:
     std::array<S, 2> data;
 
 public:
+    using scalar_type = S;
+    static constexpr usize length_tag = 2;
+
     struct {
         S x, y;
     };
@@ -94,70 +93,58 @@ public:
     {
     }
 
-    [[nodiscard]] constexpr explicit vec2_t(S s)
+    [[nodiscard]] constexpr explicit vec2_t(S const& s)
         : x(s)
         , y(s)
     {
     }
 
     [[nodiscard]] constexpr vec2_t(
-        S x,
-        S y)
+        S const& x,
+        S const& y)
         : x(x)
         , y(y)
     {
     }
 
-    [[nodiscard]] constexpr vec2_t(vec3_t<S> xyz)
-        : x(xyz.x)
-        , y(xyz.y)
-    {
-    }
-
-    [[nodiscard]] constexpr vec2_t(vec4_t<S> xyzw)
-        : x(xyzw.x)
-        , y(xyzw.y)
-    {
-    }
-
     template<typename From>
-    [[nodiscard]] constexpr explicit vec2_t(vec2_t<From> const& other)
-        : x(static_cast<S>(other.x))
-        , y(static_cast<S>(other.y))
+    [[nodiscard]] constexpr vec2_t(vec2_t<From> const& other)
+        : x(other.x)
+        , y(other.y)
     {
     }
 
     template<typename S2>
-    [[nodiscard]] constexpr auto operator+(vec2_t<S2> const& v) const
+    [[nodiscard]] constexpr auto operator+(vec2_t<S2> const& v) const -> vec2_t<decltype(S {} + S2 {})>
     {
-        return vec2_t {
+        return {
             x + v.x,
             y + v.y,
         };
     }
 
     template<typename S2>
-    [[nodiscard]] constexpr auto operator-(vec2_t<S2> const& v) const
+    [[nodiscard]] constexpr auto operator-(vec2_t<S2> const& v) const -> vec2_t<decltype(S {} - S2 {})>
     {
-        return vec2_t {
+        return {
             x - v.x,
             y - v.y,
         };
     }
 
     template<typename S2>
-    [[nodiscard]] constexpr auto operator*(vec2_t<S2> const& v) const
+    [[nodiscard]] constexpr auto operator*(vec2_t<S2> const& v) const -> vec2_t<decltype(S {} * S2 {})>
     {
-        return vec2_t {
+        return {
             x * v.x,
             y * v.y,
         };
     }
 
     template<typename S2>
-    [[nodiscard]] constexpr auto operator/(vec2_t<S2> const& v) const
+    [[nodiscard]] constexpr auto operator/(vec2_t<S2> const& v) const -> vec2_t<decltype(S {} / S2 {})>
     {
-        return vec2_t {
+        return {
             x / v.x,
             y / v.y,
         };
@@ -217,7 +204,7 @@ public:
         return y <=> v.y;
     }
 
-    [[nodiscard]] constexpr vec2_t operator+(S s) const
+    [[nodiscard]] constexpr auto operator+(S const& s) const -> vec2_t<decltype(S {} + S {})>
     {
         return {
             x + s,
@@ -225,7 +212,7 @@ public:
         };
     }
 
-    [[nodiscard]] constexpr vec2_t operator-(S s) const
+    [[nodiscard]] constexpr auto operator-(S const& s) const -> vec2_t<decltype(S {} - S {})>
     {
         return {
             x - s,
@@ -233,7 +220,7 @@ public:
         };
     }
 
-    [[nodiscard]] constexpr vec2_t operator*(S s) const
+    [[nodiscard]] constexpr auto operator*(S const& s) const -> vec2_t<decltype(S {} * S {})>
     {
         return {
             x * s,
@@ -241,7 +228,7 @@ public:
         };
     }
 
-    [[nodiscard]] constexpr vec2_t operator/(S s) const
+    [[nodiscard]] constexpr auto operator/(S const& s) const -> vec2_t<decltype(S {} / S {})>
     {
         return {
             x / s,
@@ -249,40 +236,43 @@ public:
         };
     }
 
-    constexpr vec2_t& operator+=(S s)
+    constexpr vec2_t& operator+=(S const& s)
     {
         x += s;
         y += s;
         return *this;
     }
 
-    constexpr vec2_t& operator-=(S s)
+    constexpr vec2_t& operator-=(S const& s)
     {
         x -= s;
         y -= s;
         return *this;
     }
 
-    constexpr vec2_t& operator*=(S s)
+    constexpr vec2_t& operator*=(S const& s)
     {
         x *= s;
         y *= s;
         return *this;
     }
 
-    constexpr vec2_t& operator/=(S s)
+    constexpr vec2_t& operator/=(S const& s)
     {
         x /= s;
         y /= s;
         return *this;
     }
 
-    [[nodiscard]] constexpr vec2_t operator+() const
+    [[nodiscard]] constexpr auto operator+() const -> vec2_t<decltype(+S {})>
     {
-        return *this;
+        return {
+            +x,
+            +y,
+        };
     }
 
-    [[nodiscard]] constexpr vec2_t operator-() const
+    [[nodiscard]] constexpr auto operator-() const -> vec2_t<decltype(-S {})>
     {
         return {
             -x,
@@ -290,7 +280,7 @@ public:
         };
     }
 
-    [[nodiscard]] constexpr S operator[](usize i) const
+    [[nodiscard]] constexpr S const& operator[](usize i) const
     {
         assert(i < 2);
         switch (i) {
@@ -319,8 +309,6 @@ public:
     [[nodiscard]] constexpr S length() const { return std::sqrt(length_squared()); }
     [[nodiscard]] constexpr S length_squared() const { return x * x + y * y; }
 
-    [[nodiscard]] constexpr auto map(auto f) const { return vec2_t(f(x), f(y)); }
-
     [[nodiscard]] constexpr auto begin() const { return data.begin(); }
     [[nodiscard]] constexpr auto begin() { return data.begin(); }
     [[nodiscard]] constexpr auto cbegin() const { return data.cbegin(); }
@@ -338,31 +326,31 @@ public:
     [[nodiscard]] constexpr auto crend() const { return data.crend(); }
 };
 
-template<typename S1, typename S2>
-[[nodiscard]] constexpr auto operator+(S1 s, vec2_t<S2> const& v)
+template<typename S>
+[[nodiscard]] constexpr auto operator+(S const& s, vec2_t<S> const& v)
 {
     return v + s;
 }
 
-template<typename S1, typename S2>
-[[nodiscard]] constexpr auto operator-(S1 s, vec2_t<S2> const& v)
+template<typename S>
+[[nodiscard]] constexpr auto operator-(S const& s, vec2_t<S> const& v) -> vec2_t<decltype(S {} - S {})>
 {
-    return vec2_t {
+    return {
         s - v.x,
         s - v.y,
     };
 }
 
-template<typename S1, typename S2>
-[[nodiscard]] constexpr auto operator*(S1 s, vec2_t<S2> const& v)
+template<typename S>
+[[nodiscard]] constexpr auto operator*(S const& s, vec2_t<S> const& v)
 {
     return v * s;
 }
 
-template<typename S1, typename S2>
-[[nodiscard]] constexpr auto operator/(S1 s, vec2_t<S2> const& v)
+template<typename S>
+[[nodiscard]] constexpr auto operator/(S const& s, vec2_t<S> const& v) -> vec2_t<decltype(S {} / S {})>
 {
-    return vec2_t {
+    return {
         s / v.x,
         s / v.y,
     };
@@ -374,12 +362,15 @@ std::ostream& operator<<(std::ostream& os, vec2_t<S> const& v)
     return os << '<' << v.x << ' ' << v.y << '>';
 }
 
-template<scalar S>
+template<typename S>
 union vec3_t {
 private:
     std::array<S, 3> data;
 
 public:
+    using scalar_type = S;
+    static constexpr usize length_tag = 3;
+
     struct {
         S x, y, z;
     };
@@ -397,7 +388,7 @@ public:
     {
     }
 
-    [[nodiscard]] constexpr explicit vec3_t(S s)
+    [[nodiscard]] constexpr explicit vec3_t(S const& s)
         : x(s)
         , y(s)
         , z(s)
@@ -414,39 +405,39 @@ public:
     {
     }
 
-    [[nodiscard]] constexpr vec3_t(vec4_t<S> xyzw)
-        : x(xyzw.x)
-        , y(xyzw.y)
-        , z(xyzw.z)
-    {
-    }
-
-    [[nodiscard]] constexpr vec3_t(vec2_t<S> xy, S z)
+    [[nodiscard]] constexpr vec3_t(vec2_t<S> const& xy, S const& z)
         : x(xy.x)
         , y(xy.y)
         , z(z)
     {
     }
 
-    [[nodiscard]] constexpr vec3_t(S x, vec2_t<S> yz)
+    [[nodiscard]] constexpr vec3_t(S const& x, vec2_t<S> const& yz)
         : x(x)
         , y(yz.y)
         , z(yz.z)
     {
     }
 
+    [[nodiscard]] constexpr explicit vec3_t(vec4_t<S> const& xyzw)
+        : x(xyzw.x)
+        , y(xyzw.y)
+        , z(xyzw.z)
+    {
+    }
+
     template<typename From>
-    [[nodiscard]] constexpr explicit vec3_t(vec3_t<From> const& other)
-        : x(static_cast<S>(other.x))
-        , y(static_cast<S>(other.y))
-        , z(static_cast<S>(other.y))
+    [[nodiscard]] constexpr vec3_t(vec3_t<From> const& other)
+        : x(other.x)
+        , y(other.y)
+        , z(other.z)
     {
     }
 
     template<typename S2>
-    [[nodiscard]] constexpr auto operator+(vec3_t<S2> const& v) const
+    [[nodiscard]] constexpr auto operator+(vec3_t<S2> const& v) const -> vec3_t<decltype(S {} + S2 {})>
     {
-        return vec3_t {
+        return {
             x + v.x,
             y + v.y,
             z + v.z,
@@ -454,9 +445,9 @@ public:
     }
 
     template<typename S2>
-    [[nodiscard]] constexpr auto operator-(vec3_t<S2> const& v) const
+    [[nodiscard]] constexpr auto operator-(vec3_t<S2> const& v) const -> vec3_t<decltype(S {} - S2 {})>
     {
-        return vec3_t {
+        return {
             x - v.x,
             y - v.y,
             z - v.z,
@@ -464,9 +455,9 @@ public:
     }
 
     template<typename S2>
-    [[nodiscard]] constexpr auto operator*(vec3_t<S2> const& v) const
+    [[nodiscard]] constexpr auto operator*(vec3_t<S2> const& v) const -> vec3_t<decltype(S {} * S2 {})>
     {
-        return vec3_t {
+        return {
             x * v.x,
             y * v.y,
             z * v.z,
@@ -474,9 +465,9 @@ public:
     }
 
     template<typename S2>
-    [[nodiscard]] constexpr auto operator/(vec3_t<S2> const& v) const
+    [[nodiscard]] constexpr auto operator/(vec3_t<S2> const& v) const -> vec3_t<decltype(S {} / S2 {})>
     {
-        return vec3_t {
+        return {
             x / v.x,
             y / v.y,
             z / v.z,
@@ -545,7 +536,7 @@ public:
         return z <=> v.z;
     }
 
-    [[nodiscard]] constexpr vec3_t operator+(S s) const
+    [[nodiscard]] constexpr auto operator+(S const& s) const -> vec3_t<decltype(S {} + S {})>
     {
         return {
             x + s,
@@ -554,7 +545,7 @@ public:
         };
     }
 
-    [[nodiscard]] constexpr vec3_t operator-(S s) const
+    [[nodiscard]] constexpr auto operator-(S const& s) const -> vec3_t<decltype(S {} - S {})>
     {
         return {
             x - s,
@@ -563,7 +554,7 @@ public:
         };
     }
 
-    [[nodiscard]] constexpr vec3_t operator*(S s) const
+    [[nodiscard]] constexpr auto operator*(S const& s) const -> vec3_t<decltype(S {} * S {})>
     {
         return {
             x * s,
@@ -572,7 +563,7 @@ public:
         };
     }
 
-    [[nodiscard]] constexpr vec3_t operator/(S s) const
+    [[nodiscard]] constexpr auto operator/(S const& s) const -> vec3_t<decltype(S {} / S {})>
     {
         return {
             x / s,
@@ -581,7 +572,7 @@ public:
         };
     }
 
-    constexpr vec3_t& operator+=(S s)
+    constexpr vec3_t& operator+=(S const& s)
     {
         x += s;
         y += s;
@@ -589,7 +580,7 @@ public:
         return *this;
     }
 
-    constexpr vec3_t& operator-=(S s)
+    constexpr vec3_t& operator-=(S const& s)
     {
         x -= s;
         y -= s;
@@ -597,7 +588,7 @@ public:
         return *this;
     }
 
-    constexpr vec3_t& operator*=(S s)
+    constexpr vec3_t& operator*=(S const& s)
     {
         x *= s;
         y *= s;
@@ -605,7 +596,7 @@ public:
         return *this;
     }
 
-    constexpr vec3_t& operator/=(S s)
+    constexpr vec3_t& operator/=(S const& s)
     {
         x /= s;
         y /= s;
@@ -613,12 +604,7 @@ public:
         return *this;
     }
 
-    [[nodiscard]] constexpr vec3_t operator+() const
-    {
-        return *this;
-    }
-
-    [[nodiscard]] constexpr vec3_t operator-() const
+    [[nodiscard]] constexpr auto operator+() const -> vec3_t<decltype(+S {})>
     {
         return {
             -x,
@@ -627,7 +613,16 @@ public:
         };
     }
 
-    [[nodiscard]] constexpr S operator[](usize i) const
+    [[nodiscard]] constexpr auto operator-() const -> vec3_t<decltype(-S {})>
+    {
+        return {
+            -x,
+            -y,
+            -z,
+        };
+    }
+
+    [[nodiscard]] constexpr S const& operator[](usize i) const
     {
         assert(i < 3);
         switch (i) {
@@ -659,8 +654,6 @@ public:
     [[nodiscard]] constexpr S length() const { return std::sqrt(length_squared()); }
     [[nodiscard]] constexpr S length_squared() const { return x * x + y * y + z * z; }
 
-    [[nodiscard]] constexpr auto map(auto f) const { return vec3_t(f(x), f(y), f(z)); }
-
     [[nodiscard]] constexpr auto begin() const { return data.begin(); }
     [[nodiscard]] constexpr auto begin() { return data.begin(); }
     [[nodiscard]] constexpr auto cbegin() const { return data.cbegin(); }
@@ -678,32 +671,32 @@ public:
     [[nodiscard]] constexpr auto crend() const { return data.crend(); }
 };
 
-template<typename S1, typename S2>
-[[nodiscard]] constexpr auto operator+(S1 s, vec3_t<S2> const& v)
+template<typename S>
+[[nodiscard]] constexpr auto operator+(S const& s, vec3_t<S> const& v)
 {
     return v + s;
 }
 
-template<typename S1, typename S2>
-[[nodiscard]] constexpr auto operator-(S1 s, vec3_t<S2> const& v)
+template<typename S>
+[[nodiscard]] constexpr auto operator-(S const& s, vec3_t<S> const& v) -> vec3_t<decltype(S {} - S {})>
 {
-    return vec3_t {
+    return {
         s - v.x,
         s - v.y,
         s - v.z,
     };
 }
 
-template<typename S1, typename S2>
-[[nodiscard]] constexpr auto operator*(S1 s, vec3_t<S2> const& v)
+template<typename S>
+[[nodiscard]] constexpr auto operator*(S const& s, vec3_t<S> const& v)
 {
     return v * s;
 }
 
-template<typename S1, typename S2>
-[[nodiscard]] constexpr auto operator/(S1 s, vec3_t<S2> const& v)
+template<typename S>
+[[nodiscard]] constexpr auto operator/(S const& s, vec3_t<S> const& v) -> vec3_t<decltype(S {} / S {})>
 {
-    return vec3_t {
+    return {
         s / v.x,
         s / v.y,
         s / v.z,
@@ -716,12 +709,15 @@ std::ostream& operator<<(std::ostream& os, vec3_t<S> const& v)
     return os << '<' << v.x << ' ' << v.y << ' ' << v.z << '>';
 }
 
-template<scalar S>
+template<typename S>
 union vec4_t {
 private:
     std::array<S, 4> data;
 
 public:
+    using scalar_type = S;
+    static constexpr usize length_tag = 4;
+
     struct {
         S x, y, z, w;
     };
@@ -747,7 +743,7 @@ public:
     {
     }
 
-    [[nodiscard]] constexpr explicit vec4_t(S s)
+    [[nodiscard]] constexpr explicit vec4_t(S const& s)
         : x(s)
         , y(s)
         , z(s)
@@ -756,10 +752,10 @@ public:
     }
 
     [[nodiscard]] constexpr vec4_t(
-        S x,
-        S y,
-        S z,
-        S w)
+        S const& x,
+        S const& y,
+        S const& z,
+        S const& w)
         : x(x)
         , y(y)
         , z(z)
@@ -768,8 +764,19 @@ public:
     }
 
     [[nodiscard]] constexpr vec4_t(
-        vec3_t<S> xyz,
-        S w)
+        S const& x,
+        S const& y,
+        S const& z)
+        : x(x)
+        , y(y)
+        , z(z)
+        , w(0)
+    {
+    }
+
+    [[nodiscard]] constexpr vec4_t(
+        vec3_t<S> const& xyz,
+        S const& w)
         : x(xyz.x)
         , y(xyz.y)
         , z(xyz.z)
@@ -777,9 +784,17 @@ public:
     {
     }
 
+    [[nodiscard]] constexpr vec4_t(vec3_t<S> const& xyz)
+        : x(xyz.x)
+        , y(xyz.y)
+        , z(xyz.z)
+        , w(0)
+    {
+    }
+
     [[nodiscard]] constexpr vec4_t(
-        S x,
-        vec3_t<S> yzw)
+        S const& x,
+        vec3_t<S> const& yzw)
         : x(x)
         , y(yzw.y)
         , z(yzw.z)
@@ -788,8 +803,8 @@ public:
     }
 
     [[nodiscard]] constexpr vec4_t(
-        vec2_t<S> xy,
-        vec2_t<S> zw)
+        vec2_t<S> const& xy,
+        vec2_t<S> const& zw)
         : x(xy.x)
         , y(xy.y)
         , z(zw.w)
@@ -798,9 +813,9 @@ public:
     }
 
     [[nodiscard]] constexpr vec4_t(
-        vec2_t<S> xy,
-        S z,
-        S w)
+        vec2_t<S> const& xy,
+        S const& z,
+        S const& w)
         : x(xy.x)
         , y(xy.y)
         , z(z)
@@ -809,9 +824,9 @@ public:
     }
 
     [[nodiscard]] constexpr vec4_t(
-        S x,
-        S y,
-        vec2_t<S> zw)
+        S const& x,
+        S const& y,
+        vec2_t<S> const& zw)
         : x(x)
         , y(y)
         , z(zw.z)
@@ -820,9 +835,9 @@ public:
     }
 
     [[nodiscard]] constexpr vec4_t(
-        S x,
-        vec2_t<S> yz,
-        S w)
+        S const& x,
+        vec2_t<S> const& yz,
+        S const& w)
         : x(x)
         , y(yz.y)
         , z(yz.z)
@@ -831,18 +846,28 @@ public:
     }
 
     template<typename From>
-    [[nodiscard]] constexpr explicit vec4_t(vec4_t<From> const& other)
-        : x(static_cast<S>(other.x))
-        , y(static_cast<S>(other.y))
-        , z(static_cast<S>(other.z))
-        , w(static_cast<S>(other.w))
+    [[nodiscard]] constexpr vec4_t(vec4_t<From> const& other)
+        : x(other.x)
+        , y(other.y)
+        , z(other.z)
+        , w(other.w)
     {
     }
 
-    template<typename S2>
-    [[nodiscard]] constexpr auto operator+(vec4_t<S2> const& v) const
+    [[nodiscard]] static constexpr vec4_t point(S const& x, S const& y, S const& z)
     {
-        return vec4_t {
+        return { x, y, z, 1 };
+    }
+
+    [[nodiscard]] static constexpr vec4_t point(vec3_t<S> const& xyz)
+    {
+        return { xyz.x, xyz.y, xyz.z, 1 };
+    }
+
+    template<typename S2>
+    [[nodiscard]] constexpr auto operator+(vec4_t<S2> const& v) const -> vec4_t<decltype(S {} + S2 {})>
+    {
+        return {
             x + v.x,
             y + v.y,
             z + v.z,
@@ -851,9 +876,9 @@ public:
     }
 
     template<typename S2>
-    [[nodiscard]] constexpr auto operator-(vec4_t<S2> const& v) const
+    [[nodiscard]] constexpr auto operator-(vec4_t<S2> const& v) const -> vec4_t<decltype(S {} - S2 {})>
     {
-        return vec4_t {
+        return {
             x - v.x,
             y - v.y,
             z - v.z,
@@ -862,9 +887,9 @@ public:
     }
 
     template<typename S2>
-    [[nodiscard]] constexpr auto operator*(vec4_t<S2> const& v) const
+    [[nodiscard]] constexpr auto operator*(vec4_t<S2> const& v) const -> vec4_t<decltype(S {} * S2 {})>
     {
-        return vec4_t {
+        return {
             x * v.x,
             y * v.y,
             z * v.z,
@@ -873,9 +898,9 @@ public:
     }
 
     template<typename S2>
-    [[nodiscard]] constexpr auto operator/(vec4_t<S2> const& v) const
+    [[nodiscard]] constexpr auto operator/(vec4_t<S2> const& v) const -> vec4_t<decltype(S {} / S2 {})>
     {
-        return vec4_t {
+        return {
             x / v.x,
             y / v.y,
             z / v.z,
@@ -944,16 +969,19 @@ public:
     template<typename S2>
     constexpr auto operator<=>(vec4_t<S2> const& v) const
     {
-        if (auto c = x <=> v.x; c != 0)
-            return c;
-        if (auto c = y <=> v.y; c != 0)
-            return c;
-        if (auto c = z <=> v.z; c != 0)
+        auto a = x <=> v.x;
+        if (a != 0)
+            return a;
+        auto b = y <=> v.y;
+        if (b != 0)
+            return b;
+        auto c = z <=> v.z;
+        if (c != 0)
             return c;
         return w <=> v.w;
     }
 
-    [[nodiscard]] constexpr vec4_t operator+(S s) const
+    [[nodiscard]] constexpr auto operator+(S const& s) const -> vec4_t<decltype(S {} + S {})>
     {
         return {
             x + s,
@@ -963,7 +991,7 @@ public:
         };
     }
 
-    [[nodiscard]] constexpr vec4_t operator-(S s) const
+    [[nodiscard]] constexpr auto operator-(S const& s) const -> vec4_t<decltype(S {} - S {})>
     {
         return {
             x - s,
@@ -973,7 +1001,7 @@ public:
         };
     }
 
-    [[nodiscard]] constexpr vec4_t operator*(S s) const
+    [[nodiscard]] constexpr auto operator*(S const& s) const -> vec4_t<decltype(S {} * S {})>
     {
         return {
             x * s,
@@ -983,7 +1011,7 @@ public:
         };
     }
 
-    [[nodiscard]] constexpr vec4_t operator/(S s) const
+    [[nodiscard]] constexpr auto operator/(S const& s) const -> vec4_t<decltype(S {} / S {})>
     {
         return {
             x / s,
@@ -993,7 +1021,7 @@ public:
         };
     }
 
-    constexpr vec4_t& operator+=(S s)
+    constexpr vec4_t& operator+=(S const& s)
     {
         x += s;
         y += s;
@@ -1002,7 +1030,7 @@ public:
         return *this;
     }
 
-    constexpr vec4_t& operator-=(S s)
+    constexpr vec4_t& operator-=(S const& s)
     {
         x -= s;
         y -= s;
@@ -1011,7 +1039,7 @@ public:
         return *this;
     }
 
-    constexpr vec4_t& operator*=(S s)
+    constexpr vec4_t& operator*=(S const& s)
     {
         x *= s;
         y *= s;
@@ -1020,7 +1048,7 @@ public:
         return *this;
     }
 
-    constexpr vec4_t& operator/=(S s)
+    constexpr vec4_t& operator/=(S const& s)
     {
         x /= s;
         y /= s;
@@ -1029,12 +1057,7 @@ public:
         return *this;
     }
 
-    [[nodiscard]] constexpr vec4_t operator+() const
-    {
-        return *this;
-    }
-
-    [[nodiscard]] constexpr vec4_t operator-() const
+    [[nodiscard]] constexpr auto operator+() const -> vec4_t<decltype(+S {})>
     {
         return {
             -x,
@@ -1044,7 +1067,17 @@ public:
         };
     }
 
-    [[nodiscard]] constexpr S operator[](usize i) const
+    [[nodiscard]] constexpr auto operator-() const -> vec4_t<decltype(-S {})>
+    {
+        return {
+            -x,
+            -y,
+            -z,
+            -w,
+        };
+    }
+
+    [[nodiscard]] constexpr S const& operator[](usize i) const
     {
         assert(i < 4);
         switch (i) {
@@ -1081,8 +1114,6 @@ public:
     [[nodiscard]] constexpr S length() const { return std::sqrt(length_squared()); }
     [[nodiscard]] constexpr S length_squared() const { return x * x + y * y + z * z + w * w; }
 
-    [[nodiscard]] constexpr auto map(auto f) const { return vec4_t(f(x), f(y), f(z), f(w)); }
-
     [[nodiscard]] constexpr auto begin() const { return data.begin(); }
     [[nodiscard]] constexpr auto begin() { return data.begin(); }
     [[nodiscard]] constexpr auto cbegin() const { return data.cbegin(); }
@@ -1100,16 +1131,16 @@ public:
     [[nodiscard]] constexpr auto crend() const { return data.crend(); }
 };
 
-template<typename S1, typename S2>
-[[nodiscard]] constexpr auto operator+(S1 s, vec4_t<S2> const& v)
+template<typename S>
+[[nodiscard]] constexpr auto operator+(S const& s, vec4_t<S> const& v)
 {
     return v + s;
 }
 
-template<typename S1, typename S2>
-[[nodiscard]] constexpr auto operator-(S1 s, vec4_t<S2> const& v)
+template<typename S>
+[[nodiscard]] constexpr auto operator-(S const& s, vec4_t<S> const& v) -> vec4_t<decltype(S {} - S {})>
 {
-    return vec4_t {
+    return {
         s - v.x,
         s - v.y,
         s - v.z,
@@ -1117,16 +1148,16 @@ template<typename S1, typename S2>
     };
 }
 
-template<typename S1, typename S2>
-[[nodiscard]] constexpr auto operator*(S1 s, vec4_t<S2> const& v)
+template<typename S>
+[[nodiscard]] constexpr auto operator*(S const& s, vec4_t<S> const& v)
 {
     return v * s;
 }
 
-template<typename S1, typename S2>
-[[nodiscard]] constexpr auto operator/(S1 s, vec4_t<S2> const& v)
+template<typename S>
+[[nodiscard]] constexpr auto operator/(S const& s, vec4_t<S> const& v) -> vec4_t<decltype(S {} / S {})>
 {
-    return vec4_t {
+    return {
         s / v.x,
         s / v.y,
         s / v.z,
@@ -1142,6 +1173,8 @@ std::ostream& operator<<(std::ostream& os, vec4_t<S> const& v)
 
 // vec2_t constants
 template<typename S>
+inline constexpr vec2_t<S> epsilon<vec2_t<S>> = vec2_t<S>(std::numeric_limits<S>::epsilon());
+template<typename S>
 inline constexpr vec2_t<S> one<vec2_t<S>> = vec2_t<S>(1);
 template<typename S>
 inline constexpr vec2_t<S> unit_x<vec2_t<S>> = vec2_t<S>(1, 0);
@@ -1150,6 +1183,8 @@ inline constexpr vec2_t<S> unit_y<vec2_t<S>> = vec2_t<S>(0, 1);
 template<typename S>
 inline constexpr vec2_t<S> zero<vec2_t<S>> = vec2_t<S>();
 // vec3_t constants
+template<typename S>
+inline constexpr vec3_t<S> epsilon<vec3_t<S>> = vec3_t<S>(std::numeric_limits<S>::epsilon());
 template<typename S>
 inline constexpr vec3_t<S> one<vec3_t<S>> = vec3_t<S>(1);
 template<typename S>
@@ -1161,6 +1196,8 @@ inline constexpr vec3_t<S> unit_z<vec3_t<S>> = vec3_t<S>(0, 0, 1);
 template<typename S>
 inline constexpr vec3_t<S> zero<vec3_t<S>> = vec3_t<S>();
 // vec4_t constants
+template<typename S>
+inline constexpr vec4_t<S> epsilon<vec4_t<S>> = vec4_t<S>(std::numeric_limits<S>::epsilon());
 template<typename S>
 inline constexpr vec4_t<S> one<vec4_t<S>> = vec4_t<S>(1);
 template<typename S>
@@ -1191,17 +1228,17 @@ template<typename S>
 }
 
 template<typename S>
-[[nodiscard]] constexpr vec2_t<S> clamp(vec2_t<S> const& v, S lo, S hi)
+[[nodiscard]] constexpr vec2_t<S> clamp(vec2_t<S> const& v, S const& lo, S const& hi)
 {
     return vec2_t<S>(std::clamp(v.x, lo, hi), std::clamp(v.y, lo, hi));
 }
 template<typename S>
-[[nodiscard]] constexpr vec3_t<S> clamp(vec3_t<S> const& v, S lo, S hi)
+[[nodiscard]] constexpr vec3_t<S> clamp(vec3_t<S> const& v, S const& lo, S const& hi)
 {
     return vec3_t<S>(std::clamp(v.x, lo, hi), std::clamp(v.y, lo, hi), std::clamp(v.z, lo, hi));
 }
 template<typename S>
-[[nodiscard]] constexpr vec4_t<S> clamp(vec4_t<S> const& v, S lo, S hi)
+[[nodiscard]] constexpr vec4_t<S> clamp(vec4_t<S> const& v, S const& lo, S const& hi)
 {
     return vec4_t<S>(std::clamp(v.x, lo, hi), std::clamp(v.y, lo, hi), std::clamp(v.z, lo, hi), std::clamp(v.w, lo, hi));
 }
@@ -1215,27 +1252,16 @@ template<typename S>
         v1.x * v2.y - v1.y * v2.x);
 }
 
-template<typename S1, typename S2>
-[[nodiscard]] constexpr auto distance(vec2_t<S1> const& v1, vec2_t<S2> const& v2) { return std::sqrt(distance_squared(v1, v2)); }
-template<typename S1, typename S2>
-[[nodiscard]] constexpr auto distance(vec3_t<S1> const& v1, vec3_t<S2> const& v2) { return std::sqrt(distance_squared(v1, v2)); }
-template<typename S1, typename S2>
-[[nodiscard]] constexpr auto distance(vec4_t<S1> const& v1, vec4_t<S2> const& v2) { return std::sqrt(distance_squared(v1, v2)); }
+template<vec V1, vec V2>
+requires(V1::length_tag == V2::length_tag)
+[[nodiscard]] constexpr auto distance(V1 const& v1, V2 const& v2)
+{
+    return std::sqrt(distance_squared(v1, v2));
+}
 
-template<typename S1, typename S2>
-[[nodiscard]] constexpr auto distance_squared(vec2_t<S1> const& v1, vec2_t<S2> const& v2)
-{
-    auto diff = v1 - v2;
-    return dot(diff, diff);
-}
-template<typename S1, typename S2>
-[[nodiscard]] constexpr auto distance_squared(vec3_t<S1> const& v1, vec3_t<S2> const& v2)
-{
-    auto diff = v1 - v2;
-    return dot(diff, diff);
-}
-template<typename S1, typename S2>
-[[nodiscard]] constexpr auto distance_squared(vec4_t<S1> const& v1, vec4_t<S2> const& v2)
+template<vec V1, vec V2>
+requires(V1::length_tag == V2::length_tag)
+[[nodiscard]] constexpr auto distance_squared(V1 const& v1, V2 const& v2)
 {
     auto diff = v1 - v2;
     return dot(diff, diff);
@@ -1257,12 +1283,246 @@ template<typename S1, typename S2>
     return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z + v1.w * v2.w;
 }
 
+template<vec V>
+[[nodiscard]] constexpr V normalize(V const& v)
+{
+    return v / v.length();
+}
+
+template<typename S1, typename S2>
+[[nodiscard]] constexpr bvec2 less_than(vec2_t<S1> const& v1, vec2_t<S2> const& v2)
+{
+    return {
+        v1.x < v2.x,
+        v1.y < v2.y,
+    };
+}
+template<typename S1, typename S2>
+[[nodiscard]] constexpr bvec3 less_than(vec3_t<S1> const& v1, vec3_t<S2> const& v2)
+{
+    return {
+        v1.x < v2.x,
+        v1.y < v2.y,
+        v1.z < v2.z,
+    };
+}
+template<typename S1, typename S2>
+[[nodiscard]] constexpr bvec4 less_than(vec4_t<S1> const& v1, vec4_t<S2> const& v2)
+{
+    return {
+        v1.x < v2.x,
+        v1.y < v2.y,
+        v1.z < v2.z,
+        v1.w < v2.w,
+    };
+}
+
+template<typename S1, typename S2>
+[[nodiscard]] constexpr bvec2 less_than_equal(vec2_t<S1> const& v1, vec2_t<S2> const& v2)
+{
+    return {
+        v1.x <= v2.x,
+        v1.y <= v2.y,
+    };
+}
+template<typename S1, typename S2>
+[[nodiscard]] constexpr bvec3 less_than_equal(vec3_t<S1> const& v1, vec3_t<S2> const& v2)
+{
+    return {
+        v1.x <= v2.x,
+        v1.y <= v2.y,
+        v1.z <= v2.z,
+    };
+}
+template<typename S1, typename S2>
+[[nodiscard]] constexpr bvec4 less_than_equal(vec4_t<S1> const& v1, vec4_t<S2> const& v2)
+{
+    return {
+        v1.x <= v2.x,
+        v1.y <= v2.y,
+        v1.z <= v2.z,
+        v1.w <= v2.w,
+    };
+}
+
+template<typename S1, typename S2>
+[[nodiscard]] constexpr bvec2 greater_than(vec2_t<S1> const& v1, vec2_t<S2> const& v2)
+{
+    return {
+        v1.x > v2.x,
+        v1.y > v2.y,
+    };
+}
+template<typename S1, typename S2>
+[[nodiscard]] constexpr bvec3 greater_than(vec3_t<S1> const& v1, vec3_t<S2> const& v2)
+{
+    return {
+        v1.x > v2.x,
+        v1.y > v2.y,
+        v1.z > v2.z,
+    };
+}
+template<typename S1, typename S2>
+[[nodiscard]] constexpr bvec4 greater_than(vec4_t<S1> const& v1, vec4_t<S2> const& v2)
+{
+    return {
+        v1.x > v2.x,
+        v1.y > v2.y,
+        v1.z > v2.z,
+        v1.w > v2.w,
+    };
+}
+
+template<typename S1, typename S2>
+[[nodiscard]] constexpr bvec2 greater_than_equal(vec2_t<S1> const& v1, vec2_t<S2> const& v2)
+{
+    return {
+        v1.x >= v2.x,
+        v1.y >= v2.y,
+    };
+}
+template<typename S1, typename S2>
+[[nodiscard]] constexpr bvec3 greater_than_equal(vec3_t<S1> const& v1, vec3_t<S2> const& v2)
+{
+    return {
+        v1.x >= v2.x,
+        v1.y >= v2.y,
+        v1.z >= v2.z,
+    };
+}
+template<typename S1, typename S2>
+[[nodiscard]] constexpr bvec4 greater_than_equal(vec4_t<S1> const& v1, vec4_t<S2> const& v2)
+{
+    return {
+        v1.x >= v2.x,
+        v1.y >= v2.y,
+        v1.z >= v2.z,
+        v1.w >= v2.w,
+    };
+}
+
+template<typename S1, typename S2>
+[[nodiscard]] constexpr bvec2 equal(vec2_t<S1> const& v1, vec2_t<S2> const& v2)
+{
+    return {
+        v1.x == v2.x,
+        v1.y == v2.y,
+    };
+}
+template<typename S1, typename S2>
+[[nodiscard]] constexpr bvec3 equal(vec3_t<S1> const& v1, vec3_t<S2> const& v2)
+{
+    return {
+        v1.x == v2.x,
+        v1.y == v2.y,
+        v1.z == v2.z,
+    };
+}
+template<typename S1, typename S2>
+[[nodiscard]] constexpr bvec4 equal(vec4_t<S1> const& v1, vec4_t<S2> const& v2)
+{
+    return {
+        v1.x == v2.x,
+        v1.y == v2.y,
+        v1.z == v2.z,
+        v1.w == v2.w,
+    };
+}
+
+template<typename S1, typename S2>
+[[nodiscard]] constexpr bvec2 not_equal(vec2_t<S1> const& v1, vec2_t<S2> const& v2)
+{
+    return {
+        v1.x != v2.x,
+        v1.y != v2.y,
+    };
+}
+template<typename S1, typename S2>
+[[nodiscard]] constexpr bvec3 not_equal(vec3_t<S1> const& v1, vec3_t<S2> const& v2)
+{
+    return {
+        v1.x != v2.x,
+        v1.y != v2.y,
+        v1.z != v2.z,
+    };
+}
+template<typename S1, typename S2>
+[[nodiscard]] constexpr bvec4 not_equal(vec4_t<S1> const& v1, vec4_t<S2> const& v2)
+{
+    return {
+        v1.x != v2.x,
+        v1.y != v2.y,
+        v1.z != v2.z,
+        v1.w != v2.w,
+    };
+}
+
+[[nodiscard]] constexpr bool any(bvec2 const& v)
+{
+    return v.x
+        || v.y;
+}
+[[nodiscard]] constexpr bool any(bvec3 const& v)
+{
+    return v.x
+        || v.y
+        || v.z;
+}
+[[nodiscard]] constexpr bool any(bvec4 const& v)
+{
+    return v.x
+        || v.y
+        || v.z
+        || v.w;
+}
+
+[[nodiscard]] constexpr bool all(bvec2 const& v)
+{
+    return v.x
+        && v.y;
+}
+[[nodiscard]] constexpr bool all(bvec3 const& v)
+{
+    return v.x
+        && v.y
+        && v.z;
+}
+[[nodiscard]] constexpr bool all(bvec4 const& v)
+{
+    return v.x
+        && v.y
+        && v.z
+        && v.w;
+}
+
+template<vec V>
+[[nodiscard]] constexpr bool almost_equals(V const& v1, V const& v2)
+{
+    return v1 == v2;
+}
+
+template<vec V>
+[[nodiscard]] constexpr bool almost_equals(V const& v1, V const& v2)
+requires(std::floating_point<typename V::scalar_type>)
+{
+    return all(less_than(abs(v1 - v2), V(0.00001)));
+}
+
 template<typename S>
-[[nodiscard]] constexpr vec2_t<S> normalize(vec2_t<S> const& v) { return v / v.length(); }
+[[nodiscard]] constexpr auto map(vec2_t<S> const& v, auto f)
+{
+    return vec2_t(f(v.x), f(v.y));
+}
 template<typename S>
-[[nodiscard]] constexpr vec3_t<S> normalize(vec3_t<S> const& v) { return v / v.length(); }
+[[nodiscard]] constexpr auto map(vec3_t<S> const& v, auto f)
+{
+    return vec3_t(f(v.x), f(v.y), f(v.z));
+}
 template<typename S>
-[[nodiscard]] constexpr vec4_t<S> normalize(vec4_t<S> const& v) { return v / v.length(); }
+[[nodiscard]] constexpr auto map(vec4_t<S> const& v, auto f)
+{
+    return vec4_t(f(v.x), f(v.y), f(v.z), f(v.w));
+}
 } // namespace gfx
 
 template<typename S>

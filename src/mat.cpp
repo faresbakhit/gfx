@@ -2,14 +2,10 @@ module;
 #include <cassert>
 export module gfx.mat;
 
+import gfx.meta;
 import gfx.types;
 import gfx.vec;
 import std;
-
-template<class T>
-struct undefined_constant {
-    static_assert(std::false_type(), "undefined constant");
-};
 
 export namespace gfx {
 template<typename S>
@@ -19,11 +15,15 @@ using mat4 = mat4_t<f32>;
 using dmat4 = mat4_t<f64>;
 
 template<typename T>
-inline constexpr T identity = undefined_constant<T> {};
+inline constexpr T identity = undefined<T> {};
 
 template<typename S>
 union mat4_t {
 private:
+    // We rely on C++17's CTAD
+    template<typename S2>
+    using mat4_tmpl = ::gfx::mat4_t<S2>;
+
     std::array<vec4_t<S>, 4> data;
 
 public:
@@ -51,10 +51,10 @@ public:
     }
 
     [[nodiscard]] constexpr mat4_t(
-        vec4_t<S> x,
-        vec4_t<S> y,
-        vec4_t<S> z,
-        vec4_t<S> w)
+        vec4_t<S> const& x,
+        vec4_t<S> const& y,
+        vec4_t<S> const& z,
+        vec4_t<S> const& w)
         : x(x)
         , y(y)
         , z(z)
@@ -74,32 +74,39 @@ public:
     {
     }
 
-    template<typename S2>
-    [[nodiscard]] constexpr auto operator+(mat4_t<S2> const& m) const -> mat4_t<decltype(S {} + S2 {})>
+    template<typename From>
+    [[nodiscard]] constexpr mat4_t(mat4_t<From> const& m)
+        : x(m.x)
+        , y(m.y)
+        , z(m.z)
+        , w(m.w)
     {
-        return {
-            x + m.x,
-            y + m.y,
-            z + m.z,
-            w + m.w,
-        };
     }
 
     template<typename S2>
-    [[nodiscard]] constexpr auto operator-(mat4_t<S2> const& m) const -> mat4_t<decltype(S {} - S2 {})>
+    [[nodiscard]] constexpr auto operator+(mat4_t<S2> const& m) const
     {
-        return {
+        return mat4_tmpl(
+            x + m.x,
+            y + m.y,
+            z + m.z,
+            w + m.w);
+    }
+
+    template<typename S2>
+    [[nodiscard]] constexpr auto operator-(mat4_t<S2> const& m) const
+    {
+        return mat4_tmpl(
             x - m.x,
             y - m.y,
             z - m.z,
-            w - m.w,
-        };
+            w - m.w);
     }
 
     template<typename S2>
     [[nodiscard]] constexpr auto operator*(mat4_t<S2> const& m) const
     {
-        return mat4_t {
+        return mat4_tmpl(
             x.x * m.x.x + y.x * m.x.y + z.x * m.x.z + w.x * m.x.w,
             x.y * m.x.x + y.y * m.x.y + z.y * m.x.z + w.y * m.x.w,
             x.z * m.x.x + y.z * m.x.y + z.z * m.x.z + w.z * m.x.w,
@@ -118,8 +125,7 @@ public:
             x.x * m.w.x + y.x * m.w.y + z.x * m.w.z + w.x * m.w.w,
             x.y * m.w.x + y.y * m.w.y + z.y * m.w.z + w.y * m.w.w,
             x.z * m.w.x + y.z * m.w.y + z.z * m.w.z + w.z * m.w.w,
-            x.w * m.w.x + y.w * m.w.y + z.w * m.w.z + w.w * m.w.w,
-        };
+            x.w * m.w.x + y.w * m.w.y + z.w * m.w.z + w.w * m.w.w);
     }
 
     template<typename S2>
@@ -178,44 +184,40 @@ public:
             || (w != m.w);
     }
 
-    [[nodiscard]] constexpr mat4_t operator+(S s) const
+    [[nodiscard]] constexpr auto operator+(S s) const
     {
-        return {
+        return mat4_tmpl(
             x + s,
             y + s,
             z + s,
-            w + s,
-        };
+            w + s);
     }
 
-    [[nodiscard]] constexpr mat4_t operator-(S s) const
+    [[nodiscard]] constexpr auto operator-(S s) const
     {
-        return {
+        return mat4_tmpl(
             x - s,
             y - s,
             z - s,
-            w - s,
-        };
+            w - s);
     }
 
-    [[nodiscard]] constexpr mat4_t operator*(S s) const
+    [[nodiscard]] constexpr auto operator*(S s) const
     {
-        return {
+        return mat4_tmpl(
             x * s,
             y * s,
             z * s,
-            w * s,
-        };
+            w * s);
     }
 
-    [[nodiscard]] constexpr mat4_t operator/(S s) const
+    [[nodiscard]] constexpr auto operator/(S s) const
     {
-        return {
+        return mat4_tmpl(
             x / s,
             y / s,
             z / s,
-            w / s,
-        };
+            w / s);
     }
 
     [[nodiscard]] constexpr mat4_t<S>& operator+=(S s)
@@ -288,7 +290,7 @@ public:
         }
     }
 
-    [[nodiscard]] constexpr S det() const
+    [[nodiscard]] constexpr auto det() const
     {
 
         auto d0 = z.z * w.w - w.z * z.w;
@@ -319,6 +321,58 @@ public:
     [[nodiscard]] constexpr auto rend() const { return data.rend(); }
     [[nodiscard]] constexpr auto rend() { return data.rend(); }
     [[nodiscard]] constexpr auto crend() const { return data.crend(); }
+
+    // Transformation matrices
+
+    [[nodiscard]] static constexpr mat4_t<S> translate(S x, S y, S z)
+    {
+        return {
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
+            x, y, z, 1
+        };
+    }
+
+    [[nodiscard]] static constexpr mat4_t<S> scale(S const& x, S const& y, S const& z)
+    {
+        return {
+            x, 0, 0, 0,
+            0, y, 0, 0,
+            0, 0, z, 0,
+            0, 0, 0, 1
+        };
+    }
+
+    [[nodiscard]] static constexpr mat4_t<S> rotate_x(S r)
+    {
+        return {
+            1, 0, 0, 0,
+            0, std::cos(r), std::sin(r), 0,
+            0, -std::sin(r), std::cos(r), 0,
+            0, 0, 0, 1
+        };
+    }
+
+    [[nodiscard]] static constexpr mat4_t<S> rotate_y(S r)
+    {
+        return {
+            std::cos(r), 0, -std::sin(r), 0,
+            0, 1, 0, 0,
+            std::sin(r), 0, std::cos(r), 0,
+            0, 0, 0, 1
+        };
+    }
+
+    [[nodiscard]] static constexpr mat4_t<S> rotate_z(S r)
+    {
+        return {
+            std::cos(r), std::sin(r), 0, 0,
+            -std::sin(r), std::cos(r), 0, 0,
+            0, 0, 1, 0,
+            0, 0, 0, 1
+        };
+    }
 };
 
 template<typename S1, typename S2>
@@ -330,12 +384,11 @@ template<typename S1, typename S2>
 template<typename S1, typename S2>
 [[nodiscard]] constexpr auto operator-(S1 s, mat4_t<S2> const& m)
 {
-    return mat4_t {
+    return mat4_t(
         s - m.x,
         s - m.y,
         s - m.z,
-        s - m.w,
-    };
+        s - m.w);
 }
 
 template<typename S1, typename S2>
@@ -350,26 +403,24 @@ template<typename S1, typename S2>
     return inverse(m) * s;
 }
 
-template<typename S>
-[[nodiscard]] constexpr vec4_t<S> operator*(vec4_t<S> const& v, mat4_t<S> const& m)
-{
-    return {
-        v.x * m.x.x + v.y * m.x.y + v.z * m.x.z + v.w * m.x.w,
-        v.x * m.y.x + v.y * m.y.y + v.z * m.y.z + v.w * m.y.w,
-        v.x * m.z.x + v.y * m.z.y + v.z * m.z.z + v.w * m.z.w,
-        v.x * m.w.x + v.y * m.w.y + v.z * m.w.z + v.w * m.w.w,
-    };
-}
+// template<typename S1, typename S2>
+// [[nodiscard]] constexpr auto operator*(vec4_t<S1> const& v, mat4_t<S2> const& m)
+// {
+//     return vec4_t(
+//         v.x * m.x.x + v.y * m.x.y + v.z * m.x.z + v.w * m.x.w,
+//         v.x * m.y.x + v.y * m.y.y + v.z * m.y.z + v.w * m.y.w,
+//         v.x * m.z.x + v.y * m.z.y + v.z * m.z.z + v.w * m.z.w,
+//         v.x * m.w.x + v.y * m.w.y + v.z * m.w.z + v.w * m.w.w);
+// }
 
-template<typename S>
-[[nodiscard]] constexpr vec4_t<S> operator*(mat4_t<S> const& m, vec4_t<S> const& v)
+template<typename S1, typename S2>
+[[nodiscard]] constexpr auto operator*(mat4_t<S1> const& m, vec4_t<S2> const& v)
 {
-    return {
+    return vec4_t(
         m.x.x * v.x + m.y.x * v.y + m.z.x * v.z + m.w.x * v.w,
         m.x.y * v.x + m.y.y * v.y + m.z.y * v.z + m.w.y * v.w,
         m.x.z * v.x + m.y.z * v.y + m.z.z * v.z + m.w.z * v.w,
-        m.x.w * v.x + m.y.w * v.y + m.z.w * v.z + m.w.w * v.w,
-    };
+        m.x.w * v.x + m.y.w * v.y + m.z.w * v.z + m.w.w * v.w);
 }
 
 template<typename S>
@@ -384,12 +435,13 @@ template<typename S>
 inline constexpr mat4_t<S> one<mat4_t<S>> = mat4_t<S>(
     1, 1, 1, 1,
     1, 1, 1, 1,
+    1, 1, 1, 1,
     1, 1, 1, 1);
 template<typename S>
 inline constexpr mat4_t<S> zero<mat4_t<S>> = mat4_t<S>(0);
 
 template<typename S>
-[[nodiscard]] constexpr mat4_t<S> inverse(mat4_t<S> const& m)
+[[nodiscard]] constexpr auto inverse(mat4_t<S> const& m)
 {
     auto d00 = m.z.z * m.w.w - m.w.z * m.z.w;
     auto d01 = m.y.z * m.w.w - m.w.z * m.y.w;
@@ -422,14 +474,14 @@ template<typename S>
     auto wz = m.y.z * d09 - m.x.z * d07 - m.w.z * d11;
     auto ww = m.x.z * d08 - m.y.z * d10 + m.z.z * d11;
 
-    auto d = m.det();
+    auto invdet = S(1) / m.det();
 
-    return mat4_t {
-        xx / d, xy / d, xz / d, xw / d,
-        yx / d, yy / d, yz / d, yw / d,
-        zx / d, zy / d, zz / d, zw / d,
-        wx / d, wy / d, wz / d, ww / d
-    };
+    return mat4_t(
+               xx, xy, xz, xw,
+               yx, yy, yz, yw,
+               zx, zy, zz, zw,
+               wx, wy, wz, ww)
+        * invdet;
 }
 
 template<typename S>
@@ -442,6 +494,27 @@ template<typename S>
         m.x.w, m.y.w, m.z.w, m.w.w
     };
 }
+
+template<typename F>
+constexpr bool almost_equals(mat4_t<F> const& m1, mat4_t<F> const& m2)
+{
+    return almost_equals(m1.x, m2.x)
+        && almost_equals(m1.y, m2.y)
+        && almost_equals(m1.z, m2.z)
+        && almost_equals(m1.w, m2.w);
+}
+
+template<typename S>
+[[nodiscard]] constexpr mat4_t<S> scale(S const& x, S const& y, S const& z)
+{
+    return {
+        x, 0, 0, 0,
+        0, y, 0, 0,
+        0, 0, z, 0,
+        0, 0, 0, 1
+    };
+}
+
 }; // namespace gfx
 
 template<typename S>
@@ -453,13 +526,13 @@ struct std::formatter<gfx::mat4_t<S>, char> {
 
     auto format(gfx::mat4_t<S> const& m, auto& ctx) const
     {
-        gfx::ivec4 p;
-        for (std::tuple<gfx::vec4_t<S> const&, gfx::i32&> e : std::ranges::views::zip(m, p)) {
+        gfx::uvec4 p;
+        for (auto e : std::ranges::views::zip(m, p)) {
             auto [col, padding] = e;
             for (auto c : col)
                 padding = std::max(
                     padding,
-                    gfx::i32(std::format("{}", c).length()));
+                    gfx::u32(std::format("{}", c).length()));
         }
         return std::format_to(ctx.out(),
             "<<{:{}} {:{}} {:{}} {:{}}>\n <{:{}} {:{}} {:{}} {:{}}>\n <{:{}} {:{}} {:{}} {:{}}>\n <{:{}} {:{}} {:{}} {:{}}>>",

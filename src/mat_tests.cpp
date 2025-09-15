@@ -1,6 +1,6 @@
 import boost.ut;
-import gfx.almost_equals;
 import gfx.mat;
+import gfx.types;
 import gfx.vec;
 
 using namespace boost::ut::bdd;
@@ -83,10 +83,8 @@ int main()
                     0.21805, -0.80827, -0.07895, -0.52256,
                     0.45113, -1.45677, -0.22368, -0.81391,
                     0.24060, -0.44361, -0.05263, -0.30075,
-                    -0.04511, 0.52068, 0.19737, 0.30639),
-                747)));
+                    -0.04511, 0.52068, 0.19737, 0.30639))));
         };
-
         scenario("Another 4x4 matrix") = []() {
             mat4 a(
                 8, 7, -6, -3,
@@ -98,10 +96,8 @@ int main()
                     -0.15385, -0.07692, 0.35897, -0.69231,
                     -0.15385, 0.12308, 0.35897, -0.69231,
                     -0.28205, 0.02564, 0.43590, -0.76923,
-                    -0.53846, 0.03077, 0.92308, -1.92308),
-                551)));
+                    -0.53846, 0.03077, 0.92308, -1.92308))));
         };
-
         scenario("A third 4x4 matrix") = []() {
             mat4 a(
                 9, -5, -4, -7,
@@ -113,10 +109,8 @@ int main()
                     -0.04074, -0.07778, -0.02901, 0.17778,
                     -0.07778, 0.03333, -0.14630, 0.06667,
                     0.14444, 0.36667, -0.10926, -0.26667,
-                    -0.22222, -0.33333, 0.12963, 0.33333),
-                1259)));
+                    -0.22222, -0.33333, 0.12963, 0.33333))));
         };
-
         scenario("Multiplying a product by its inverse") = []() {
             mat4 a(
                 3, 3, -4, -6,
@@ -129,7 +123,81 @@ int main()
                 2, 7, 5, 0,
                 2, 0, 4, 5);
             mat4 c = a * b;
-            expect(almost_equals(c * inverse(b), a, 8));
+            expect(almost_equals(c * inverse(b), a));
         };
+    };
+
+    feature("Translation matrix") = []() {
+        auto transform = mat4::translate(5, -3, 2);
+        auto p = vec4(-3, 4, 5, 1);
+        scenario("Multiplying by a translation matrix") = [&]() {
+            expect(transform * p == vec4(2, 1, 7, 1));
+        };
+        scenario("Multiplying by the inverse of a translation matrix") = [&]() {
+            expect(inverse(transform) * p == vec4(-8, 7, 3, 1));
+        };
+        scenario("Translation does not affect vectors") = [&]() {
+            auto v = vec4(-3, 4, 5, 0);
+            expect(transform * v == v);
+        };
+    };
+
+    feature("Scaling matrix") = []() {
+        auto transform = mat4::scale(2, 3, 4);
+        auto p = vec4(-4, 6, 8, 1);
+        scenario("Multiplying by a translation matrix") = [&]() {
+            expect(transform * p == vec4(-8, 18, 32, 1));
+        };
+        scenario("Multiplying by the inverse of a translation matrix") = [&]() {
+            expect(inverse(transform) * p == vec4(-2, 2, 2, 1));
+        };
+        scenario("Translation affects vectors") = [&]() {
+            auto v = vec4(-4, 6, 8, 0);
+            expect(transform * v == vec4(-8, 18, 32, 0));
+        };
+        scenario("Refletion is scaling by a negative value") = []() {
+            expect(mat4::scale(-1, 1, 1) * vec4(2, 3, 4, 1) == vec4(-2, 3, 4, 1));
+        };
+    };
+
+    feature("Rotation matrix") = []() {
+        scenario("Rotating a point around the x axis") = []() {
+            auto half_quarter = dmat4::rotate_x(std::numbers::pi / 4.0);
+            auto full_quarter = dmat4::rotate_x(std::numbers::pi / 2.0);
+            auto p = dvec4(0.0, 1.0, 0.0, 1.0);
+            expect(almost_equals(half_quarter * p, dvec4(0.0, std::sqrt(2.0) / 2.0, std::sqrt(2.0) / 2.0, 1.0)));
+            expect(almost_equals(full_quarter * p, dvec4(0.0, 0.0, 1.0, 1.0)));
+            expect(almost_equals(inverse(half_quarter) * p, dvec4(0.0, std::sqrt(2.0) / 2.0, -std::sqrt(2.0) / 2.0, 1.0)));
+        };
+        scenario("Rotating a point around the y axis") = []() {
+            auto half_quarter = dmat4::rotate_y(std::numbers::pi / 4.0);
+            auto full_quarter = dmat4::rotate_y(std::numbers::pi / 2.0);
+            auto p = dvec4(0.0, 0.0, 1.0, 1.0);
+            expect(almost_equals(half_quarter * p, dvec4(std::sqrt(2.0) / 2.0, 0.0, std::sqrt(2.0) / 2.0, 1.0)));
+            expect(almost_equals(full_quarter * p, dvec4(1.0, 0.0, 0.0, 1.0)));
+        };
+        scenario("Rotating a point around the z axis") = []() {
+            auto half_quarter = dmat4::rotate_z(std::numbers::pi / 4.0);
+            auto full_quarter = dmat4::rotate_z(std::numbers::pi / 2.0);
+            auto p = dvec4(0.0, 1.0, 0.0, 1.0);
+            expect(almost_equals(half_quarter * p, dvec4(-std::sqrt(2.0) / 2.0, std::sqrt(2.0) / 2.0, 0.0, 1.0)));
+            expect(almost_equals(full_quarter * p, dvec4(-1.0, 0.0, 0.0, 1.0)));
+        };
+    };
+
+    feature("Individual transformations are applied in sequence") = [] {
+        auto p1 = dvec4(1, 0, 1, 1);
+        auto p2 = dvec4(15, 0, 7, 1);
+        auto a = dmat4::rotate_x(std::numbers::pi / 2.0f);
+        auto b = dmat4::scale(5, 5, 5);
+        auto c = dmat4::translate(10, 5, 7);
+        auto p11 = a * p1;
+        expect(almost_equals(p11, dvec4(1, -1, 0, 1)));
+        auto p12 = b * p11;
+        expect(almost_equals(p12, dvec4(5, -5, 0, 1)));
+        auto p13 = c * p12;
+        expect(almost_equals(p13, p2));
+        auto t = c * b * a;
+        expect(almost_equals(t * p1, p2));
     };
 }

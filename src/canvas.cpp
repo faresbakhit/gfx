@@ -10,7 +10,7 @@ public:
     canvas(i32 width, i32 height)
         : m_width(width)
         , m_height(height)
-        , m_data(new vec3[width * height])
+        , m_data(new vec3[width * height]())
     {
     }
 
@@ -39,20 +39,30 @@ public:
         delete[] m_data;
     }
 
-    vec3& operator[](int x, int y)
+    vec3& operator[](ivec2 xy)
     {
-        if (x < 0 || x >= m_width || y < 0 || y >= m_height) {
-            return dummy_pixel;
-        }
-        return m_data[y * m_width + x];
+        return operator[](xy.x, xy.y);
     }
 
-    vec3 const& operator[](int x, int y) const
+    vec3 const& operator[](ivec2 xy) const
     {
-        if (x < 0 || x >= m_width || y < 0 || y >= m_height) {
+        return operator[](xy.x, xy.y);
+    }
+
+    vec3& operator[](int col, int row)
+    {
+        if (col < 0 || col >= m_width || row < 0 || row >= m_height) {
             return dummy_pixel;
         }
-        return m_data[y * m_width + x];
+        return m_data[row * m_width + col];
+    }
+
+    vec3 const& operator[](int col, int row) const
+    {
+        if (col < 0 || col >= m_width || row < 0 || row >= m_height) {
+            return dummy_pixel;
+        }
+        return m_data[row * m_width + col];
     }
 
     int width() const { return m_width; }
@@ -72,7 +82,7 @@ private:
 
 vec3 canvas::dummy_pixel = vec3();
 
-u8 to_u8(float x)
+u8 to_u8(f32 x)
 {
     if (x <= 0.0f)
         return 0;
