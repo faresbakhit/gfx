@@ -1,13 +1,13 @@
 module;
 #include <cassert>
-export module gfx.mat;
+export module raytracer.mat;
 
-import gfx.meta;
-import gfx.types;
-import gfx.vec;
+import raytracer.meta;
+import raytracer.types;
+import raytracer.vec;
 import std;
 
-export namespace gfx {
+export namespace raytracer {
 template<typename S>
 union mat4_t;
 
@@ -22,7 +22,7 @@ union mat4_t {
 private:
     // We rely on C++17's CTAD
     template<typename S2>
-    using mat4_tmpl = ::gfx::mat4_t<S2>;
+    using mat4_tmpl = ::raytracer::mat4_t<S2>;
 
     std::array<vec4_t<S>, 4> data;
 
@@ -515,24 +515,24 @@ template<typename S>
     };
 }
 
-}; // namespace gfx
+}; // namespace raytracer
 
 template<typename S>
-struct std::formatter<gfx::mat4_t<S>, char> {
+struct std::formatter<raytracer::mat4_t<S>, char> {
     constexpr auto parse(auto& ctx)
     {
         return ctx.begin();
     }
 
-    auto format(gfx::mat4_t<S> const& m, auto& ctx) const
+    auto format(raytracer::mat4_t<S> const& m, auto& ctx) const
     {
-        gfx::uvec4 p;
+        raytracer::uvec4 p;
         for (auto e : std::ranges::views::zip(m, p)) {
             auto [col, padding] = e;
             for (auto c : col)
                 padding = std::max(
                     padding,
-                    gfx::u32(std::format("{}", c).length()));
+                    raytracer::u32(std::format("{}", c).length()));
         }
         return std::format_to(ctx.out(),
             "<<{:{}} {:{}} {:{}} {:{}}>\n <{:{}} {:{}} {:{}} {:{}}>\n <{:{}} {:{}} {:{}} {:{}}>\n <{:{}} {:{}} {:{}} {:{}}>>",

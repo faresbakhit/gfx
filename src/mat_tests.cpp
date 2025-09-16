@@ -1,11 +1,11 @@
 import boost.ut;
-import gfx.mat;
-import gfx.types;
-import gfx.vec;
+import raytracer.mat;
+import raytracer.types;
+import raytracer.vec;
 
 using namespace boost::ut::bdd;
 using namespace boost::ut;
-using namespace gfx;
+using namespace raytracer;
 
 int main()
 {

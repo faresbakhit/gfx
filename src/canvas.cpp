@@ -1,10 +1,10 @@
-export module gfx.canvas;
+export module raytracer.canvas;
 
-import gfx.types;
-import gfx.vec;
+import raytracer.types;
+import raytracer.vec;
 import std;
 
-namespace gfx {
+namespace raytracer {
 export class canvas {
 public:
     canvas(i32 width, i32 height)
@@ -108,4 +108,4 @@ export void write_ppm(canvas const& canvas, std::string const& file_path)
     std::ofstream os(file_path, std::ios::binary);
     write_ppm(canvas, os);
 }
-} // namespace gfx
+} // namespace raytracer

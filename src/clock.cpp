@@ -1,7 +1,7 @@
 import std;
-import gfx;
+import raytracer;
 
-using namespace gfx;
+using namespace raytracer;
 
 int main()
 {

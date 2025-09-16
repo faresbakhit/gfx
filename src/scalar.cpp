@@ -1,9 +1,9 @@
-export module gfx.scalar;
+export module raytracer.scalar;
 
-import gfx.types;
+import raytracer.types;
 import std;
 
-export namespace gfx {
+export namespace raytracer {
 template<typename S>
 struct scalar_traits;
 
@@ -68,4 +68,4 @@ struct scalar_traits<i32> {
     static constexpr i32 one() { return 1; }
     static constexpr i32 zero() { return 0; }
 };
-} // namespace gfx
+} // namespace raytracer

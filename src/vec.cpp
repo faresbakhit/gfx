@@ -1,12 +1,12 @@
 module;
 #include <cassert>
-export module gfx.vec;
+export module raytracer.vec;
 
-import gfx.meta;
-import gfx.types;
+import raytracer.meta;
+import raytracer.types;
 import std;
 
-export namespace gfx {
+export namespace raytracer {
 template<typename S>
 union vec2_t;
 
@@ -1523,42 +1523,42 @@ template<typename S>
 {
     return vec4_t(f(v.x), f(v.y), f(v.z), f(v.w));
 }
-} // namespace gfx
+} // namespace raytracer
 
 template<typename S>
-struct std::formatter<gfx::vec2_t<S>, char> {
+struct std::formatter<raytracer::vec2_t<S>, char> {
     constexpr auto parse(auto& ctx)
     {
         return ctx.begin();
     }
 
-    auto format(gfx::vec2_t<S> const& v, auto& ctx) const
+    auto format(raytracer::vec2_t<S> const& v, auto& ctx) const
     {
         return std::format_to(ctx.out(), "<{} {}>", v.x, v.y);
     }
 };
 
 template<typename S>
-struct std::formatter<gfx::vec3_t<S>, char> {
+struct std::formatter<raytracer::vec3_t<S>, char> {
     constexpr auto parse(auto& ctx)
     {
         return ctx.begin();
     }
 
-    auto format(gfx::vec3_t<S> const& v, auto& ctx) const
+    auto format(raytracer::vec3_t<S> const& v, auto& ctx) const
     {
         return std::format_to(ctx.out(), "<{} {} {}>", v.x, v.y, v.z);
     }
 };
 
 template<typename S>
-struct std::formatter<gfx::vec4_t<S>, char> {
+struct std::formatter<raytracer::vec4_t<S>, char> {
     constexpr auto parse(auto& ctx)
     {
         return ctx.begin();
     }
 
-    auto format(gfx::vec4_t<S> const& v, auto& ctx) const
+    auto format(raytracer::vec4_t<S> const& v, auto& ctx) const
     {
         return std::format_to(ctx.out(), "<{} {} {} {}>", v.x, v.y, v.z, v.w);
     }

@@ -1,11 +1,11 @@
-export module gfx.ray;
+export module raytracer.ray;
 
-import gfx.types;
-import gfx.vec;
-import gfx.mat;
+import raytracer.types;
+import raytracer.vec;
+import raytracer.mat;
 import std;
 
-export namespace gfx {
+export namespace raytracer {
 struct ray {
     vec3 o, d;
 
@@ -51,17 +51,17 @@ struct intersection {
 };
 
 using intersections = std::unordered_set<intersection>;
-} // namespace gfx
+} // namespace raytracer
 
 template<>
-struct ::std::hash<gfx::intersection> {
-    std::size_t operator()(gfx::intersection const& i) const noexcept
+struct ::std::hash<raytracer::intersection> {
+    std::size_t operator()(raytracer::intersection const& i) const noexcept
     {
         return (static_cast<std::size_t>(i.t) << 32) | i.object_id;
     }
 };
 
-export namespace gfx {
+export namespace raytracer {
 struct object {
     u32 id = no_id;
     virtual ~object() { }
@@ -130,18 +130,18 @@ struct sphere : public object {
     }
     return min_i;
 }
-} // namespace gfx
+} // namespace raytracer
 
 template<>
-struct std::formatter<gfx::intersection> {
+struct std::formatter<raytracer::intersection> {
     constexpr auto parse(auto& ctx)
     {
         return ctx.begin();
     }
 
-    auto format(gfx::intersection const& i, auto& ctx) const
+    auto format(raytracer::intersection const& i, auto& ctx) const
     {
-        if (i.object_id == gfx::no_id) {
+        if (i.object_id == raytracer::no_id) {
             return std::format_to(ctx.out(), "{}", i.t);
         } else {
             return std::format_to(ctx.out(), "{}{{{}}}", i.t, i.object_id);
@@ -150,13 +150,13 @@ struct std::formatter<gfx::intersection> {
 };
 
 template<>
-struct std::formatter<gfx::ray> {
+struct std::formatter<raytracer::ray> {
     constexpr auto parse(auto& ctx)
     {
         return ctx.begin();
     }
 
-    auto format(gfx::ray const& r, auto& ctx) const
+    auto format(raytracer::ray const& r, auto& ctx) const
     {
         return std::format_to(ctx.out(), "({}, {})", r.o, r.d);
     }

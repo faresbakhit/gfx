@@ -1,9 +1,9 @@
 import boost.ut;
-import gfx.vec;
+import raytracer.vec;
 
 using namespace boost::ut::bdd;
 using namespace boost::ut;
-using namespace gfx;
+using namespace raytracer;
 
 int main()
 {

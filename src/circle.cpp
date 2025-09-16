@@ -1,7 +1,7 @@
 import std;
-import gfx;
+import raytracer;
 
-using namespace gfx;
+using namespace raytracer;
 
 constexpr i32 canvas_size = 100;
 constexpr f32 wall_size = 7.0f;
