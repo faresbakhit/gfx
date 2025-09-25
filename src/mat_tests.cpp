@@ -1,4 +1,5 @@
 import boost.ut;
+import raytracer.constants;
 import raytracer.mat;
 import raytracer.types;
 import raytracer.vec;
@@ -78,7 +79,7 @@ int main()
                 2, -5, 7, -3,
                 6, 1, -6, 7,
                 -8, 8, -7, 4);
-            expect((almost_equals(inverse(a),
+            expect((almostEqual(inverse(a),
                 mat4(
                     0.21805, -0.80827, -0.07895, -0.52256,
                     0.45113, -1.45677, -0.22368, -0.81391,
@@ -91,7 +92,7 @@ int main()
                 -5, 5, 0, 0,
                 9, 6, 9, -9,
                 2, 1, 6, -4);
-            expect((almost_equals(inverse(a),
+            expect((almostEqual(inverse(a),
                 mat4(
                     -0.15385, -0.07692, 0.35897, -0.69231,
                     -0.15385, 0.12308, 0.35897, -0.69231,
@@ -104,7 +105,7 @@ int main()
                 3, -2, 9, 6,
                 0, -6, 6, 6,
                 9, -3, 4, 2);
-            expect((almost_equals(inverse(a),
+            expect((almostEqual(inverse(a),
                 mat4(
                     -0.04074, -0.07778, -0.02901, 0.17778,
                     -0.07778, 0.03333, -0.14630, 0.06667,
@@ -123,7 +124,7 @@ int main()
                 2, 7, 5, 0,
                 2, 0, 4, 5);
             mat4 c = a * b;
-            expect(almost_equals(c * inverse(b), a));
+            expect(almostEqual(c * inverse(b), a));
         };
     };
 
@@ -162,42 +163,42 @@ int main()
 
     feature("Rotation matrix") = []() {
         scenario("Rotating a point around the x axis") = []() {
-            auto half_quarter = dmat4::rotate_x(std::numbers::pi / 4.0);
-            auto full_quarter = dmat4::rotate_x(std::numbers::pi / 2.0);
+            auto half_quarter = dmat4::rotateX(std::numbers::pi / 4.0);
+            auto full_quarter = dmat4::rotateX(std::numbers::pi / 2.0);
             auto p = dvec4(0.0, 1.0, 0.0, 1.0);
-            expect(almost_equals(half_quarter * p, dvec4(0.0, std::sqrt(2.0) / 2.0, std::sqrt(2.0) / 2.0, 1.0)));
-            expect(almost_equals(full_quarter * p, dvec4(0.0, 0.0, 1.0, 1.0)));
-            expect(almost_equals(inverse(half_quarter) * p, dvec4(0.0, std::sqrt(2.0) / 2.0, -std::sqrt(2.0) / 2.0, 1.0)));
+            expect(almostEqual(half_quarter * p, dvec4(0.0, std::sqrt(2.0) / 2.0, std::sqrt(2.0) / 2.0, 1.0)));
+            expect(almostEqual(full_quarter * p, dvec4(0.0, 0.0, 1.0, 1.0)));
+            expect(almostEqual(inverse(half_quarter) * p, dvec4(0.0, std::sqrt(2.0) / 2.0, -std::sqrt(2.0) / 2.0, 1.0)));
         };
         scenario("Rotating a point around the y axis") = []() {
-            auto half_quarter = dmat4::rotate_y(std::numbers::pi / 4.0);
-            auto full_quarter = dmat4::rotate_y(std::numbers::pi / 2.0);
+            auto half_quarter = dmat4::rotateY(std::numbers::pi / 4.0);
+            auto full_quarter = dmat4::rotateY(std::numbers::pi / 2.0);
             auto p = dvec4(0.0, 0.0, 1.0, 1.0);
-            expect(almost_equals(half_quarter * p, dvec4(std::sqrt(2.0) / 2.0, 0.0, std::sqrt(2.0) / 2.0, 1.0)));
-            expect(almost_equals(full_quarter * p, dvec4(1.0, 0.0, 0.0, 1.0)));
+            expect(almostEqual(half_quarter * p, dvec4(std::sqrt(2.0) / 2.0, 0.0, std::sqrt(2.0) / 2.0, 1.0)));
+            expect(almostEqual(full_quarter * p, dvec4(1.0, 0.0, 0.0, 1.0)));
         };
         scenario("Rotating a point around the z axis") = []() {
-            auto half_quarter = dmat4::rotate_z(std::numbers::pi / 4.0);
-            auto full_quarter = dmat4::rotate_z(std::numbers::pi / 2.0);
+            auto half_quarter = dmat4::rotateZ(std::numbers::pi / 4.0);
+            auto full_quarter = dmat4::rotateZ(std::numbers::pi / 2.0);
             auto p = dvec4(0.0, 1.0, 0.0, 1.0);
-            expect(almost_equals(half_quarter * p, dvec4(-std::sqrt(2.0) / 2.0, std::sqrt(2.0) / 2.0, 0.0, 1.0)));
-            expect(almost_equals(full_quarter * p, dvec4(-1.0, 0.0, 0.0, 1.0)));
+            expect(almostEqual(half_quarter * p, dvec4(-std::sqrt(2.0) / 2.0, std::sqrt(2.0) / 2.0, 0.0, 1.0)));
+            expect(almostEqual(full_quarter * p, dvec4(-1.0, 0.0, 0.0, 1.0)));
         };
     };
 
     feature("Individual transformations are applied in sequence") = [] {
         auto p1 = dvec4(1, 0, 1, 1);
         auto p2 = dvec4(15, 0, 7, 1);
-        auto a = dmat4::rotate_x(std::numbers::pi / 2.0f);
+        auto a = dmat4::rotateX(std::numbers::pi / 2.0f);
         auto b = dmat4::scale(5, 5, 5);
         auto c = dmat4::translate(10, 5, 7);
         auto p11 = a * p1;
-        expect(almost_equals(p11, dvec4(1, -1, 0, 1)));
+        expect(almostEqual(p11, dvec4(1, -1, 0, 1)));
         auto p12 = b * p11;
-        expect(almost_equals(p12, dvec4(5, -5, 0, 1)));
+        expect(almostEqual(p12, dvec4(5, -5, 0, 1)));
         auto p13 = c * p12;
-        expect(almost_equals(p13, p2));
+        expect(almostEqual(p13, p2));
         auto t = c * b * a;
-        expect(almost_equals(t * p1, p2));
+        expect(almostEqual(t * p1, p2));
     };
 }

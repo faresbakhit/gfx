@@ -1,4 +1,5 @@
 import boost.ut;
+import raytracer.constants;
 import raytracer.vec;
 
 using namespace boost::ut::bdd;

@@ -1,7 +1,7 @@
 # Homemade Ray Tracer
 
-| [![Clock](./renders/clock.png)](./src/clock.cpp) | [![Circle](./renders/circle.png)](./src/circle.cpp) |
-| - | -|
+| [![Clock](./renders/clock.png)](./src/clock.cpp) | [![Circle](./renders/circle.png)](./src/circle.cpp) | [![Sphere](./renders/sphere.png)](./src/sphere.cpp) |
+| - | - | - |
 
 The ray tracer is written in C++23 with [modules](https://en.cppreference.com/w/cpp/language/modules.html) and no dependencies except for running tests, the [μt](https://github.com/boost-ext/ut) unit testing framework is required ([CMake](./CMakeLists.txt) will automatically install it).
 

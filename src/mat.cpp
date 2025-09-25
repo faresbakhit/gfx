@@ -14,8 +14,14 @@ union mat4_t;
 using mat4 = mat4_t<f32>;
 using dmat4 = mat4_t<f64>;
 
-template<typename T>
-inline constexpr T identity = undefined<T> {};
+template<typename>
+struct is_mat : std::false_type { };
+
+template<typename S>
+struct is_mat<mat4_t<S>> : std::true_type { };
+
+template<typename S>
+concept mat = is_mat<S>::value;
 
 template<typename S>
 union mat4_t {
@@ -24,7 +30,7 @@ private:
     template<typename S2>
     using mat4_tmpl = ::raytracer::mat4_t<S2>;
 
-    std::array<vec4_t<S>, 4> data;
+    std::array<vec4_t<S>, 4> m_data;
 
 public:
     struct {
@@ -306,21 +312,21 @@ public:
             - w.x * (x.y * d2 - y.y * d4 + z.y * d5));
     }
 
-    [[nodiscard]] constexpr auto begin() const { return data.begin(); }
-    [[nodiscard]] constexpr auto begin() { return data.begin(); }
-    [[nodiscard]] constexpr auto cbegin() const { return data.cbegin(); }
+    [[nodiscard]] constexpr auto begin() const { return m_data.begin(); }
+    [[nodiscard]] constexpr auto begin() { return m_data.begin(); }
+    [[nodiscard]] constexpr auto cbegin() const { return m_data.cbegin(); }
 
-    [[nodiscard]] constexpr auto end() const { return data.end(); }
-    [[nodiscard]] constexpr auto end() { return data.end(); }
-    [[nodiscard]] constexpr auto cend() const { return data.cend(); }
+    [[nodiscard]] constexpr auto end() const { return m_data.end(); }
+    [[nodiscard]] constexpr auto end() { return m_data.end(); }
+    [[nodiscard]] constexpr auto cend() const { return m_data.cend(); }
 
-    [[nodiscard]] constexpr auto rbegin() const { return data.rbegin(); }
-    [[nodiscard]] constexpr auto rbegin() { return data.rbegin(); }
-    [[nodiscard]] constexpr auto crbegin() const { return data.crbegin(); }
+    [[nodiscard]] constexpr auto rbegin() const { return m_data.rbegin(); }
+    [[nodiscard]] constexpr auto rbegin() { return m_data.rbegin(); }
+    [[nodiscard]] constexpr auto crbegin() const { return m_data.crbegin(); }
 
-    [[nodiscard]] constexpr auto rend() const { return data.rend(); }
-    [[nodiscard]] constexpr auto rend() { return data.rend(); }
-    [[nodiscard]] constexpr auto crend() const { return data.crend(); }
+    [[nodiscard]] constexpr auto rend() const { return m_data.rend(); }
+    [[nodiscard]] constexpr auto rend() { return m_data.rend(); }
+    [[nodiscard]] constexpr auto crend() const { return m_data.crend(); }
 
     // Transformation matrices
 
@@ -344,7 +350,7 @@ public:
         };
     }
 
-    [[nodiscard]] static constexpr mat4_t<S> rotate_x(S r)
+    [[nodiscard]] static constexpr mat4_t<S> rotateX(S r)
     {
         return {
             1, 0, 0, 0,
@@ -354,7 +360,7 @@ public:
         };
     }
 
-    [[nodiscard]] static constexpr mat4_t<S> rotate_y(S r)
+    [[nodiscard]] static constexpr mat4_t<S> rotateY(S r)
     {
         return {
             std::cos(r), 0, -std::sin(r), 0,
@@ -364,7 +370,7 @@ public:
         };
     }
 
-    [[nodiscard]] static constexpr mat4_t<S> rotate_z(S r)
+    [[nodiscard]] static constexpr mat4_t<S> rotateZ(S r)
     {
         return {
             std::cos(r), std::sin(r), 0, 0,
@@ -430,17 +436,6 @@ std::ostream& operator<<(std::ostream& os, mat4_t<S> const& m)
 }
 
 template<typename S>
-inline constexpr mat4_t<S> identity<mat4_t<S>> = mat4_t<S>();
-template<typename S>
-inline constexpr mat4_t<S> one<mat4_t<S>> = mat4_t<S>(
-    1, 1, 1, 1,
-    1, 1, 1, 1,
-    1, 1, 1, 1,
-    1, 1, 1, 1);
-template<typename S>
-inline constexpr mat4_t<S> zero<mat4_t<S>> = mat4_t<S>(0);
-
-template<typename S>
 [[nodiscard]] constexpr auto inverse(mat4_t<S> const& m)
 {
     auto d00 = m.z.z * m.w.w - m.w.z * m.z.w;
@@ -496,12 +491,12 @@ template<typename S>
 }
 
 template<typename F>
-constexpr bool almost_equals(mat4_t<F> const& m1, mat4_t<F> const& m2)
+constexpr bool almostEqual(mat4_t<F> const& m1, mat4_t<F> const& m2)
 {
-    return almost_equals(m1.x, m2.x)
-        && almost_equals(m1.y, m2.y)
-        && almost_equals(m1.z, m2.z)
-        && almost_equals(m1.w, m2.w);
+    return almostEqual(m1.x, m2.x)
+        && almostEqual(m1.y, m2.y)
+        && almostEqual(m1.z, m2.z)
+        && almostEqual(m1.w, m2.w);
 }
 
 template<typename S>

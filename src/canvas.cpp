@@ -5,24 +5,26 @@ import raytracer.vec;
 import std;
 
 namespace raytracer {
-export class canvas {
+export template<vec V>
+requires(std::floating_point<typename V::scalar_type>)
+class Canvas {
 public:
-    canvas(i32 width, i32 height)
+    constexpr Canvas(i32 width, i32 height)
         : m_width(width)
         , m_height(height)
-        , m_data(new vec3[width * height]())
+        , m_data(new V[width * height]())
     {
     }
 
-    canvas(canvas const& other)
+    constexpr Canvas(Canvas const& other)
         : m_width(other.width())
         , m_height(other.height())
-        , m_data(new vec3[other.width() * other.height()])
+        , m_data(new V[other.width() * other.height()])
     {
         std::copy(other.begin(), other.end(), begin());
     }
 
-    canvas(canvas&& other)
+    constexpr Canvas(Canvas&& other)
         : m_width(other.width())
         , m_height(other.height())
         , m_data(other.m_data)
@@ -30,26 +32,26 @@ public:
         other.m_data = nullptr;
     }
 
-    canvas& operator=(canvas const&) = delete;
+    Canvas& operator=(Canvas const&) = delete;
 
-    canvas& operator=(canvas&&) = delete;
+    Canvas& operator=(Canvas&&) = delete;
 
-    ~canvas()
+    constexpr ~Canvas()
     {
         delete[] m_data;
     }
 
-    vec3& operator[](ivec2 xy)
+    constexpr V& operator[](ivec2 xy)
     {
         return operator[](xy.x, xy.y);
     }
 
-    vec3 const& operator[](ivec2 xy) const
+    constexpr V const& operator[](ivec2 xy) const
     {
         return operator[](xy.x, xy.y);
     }
 
-    vec3& operator[](int col, int row)
+    constexpr V& operator[](i32 row, i32 col)
     {
         if (col < 0 || col >= m_width || row < 0 || row >= m_height) {
             return dummy_pixel;
@@ -57,7 +59,7 @@ public:
         return m_data[row * m_width + col];
     }
 
-    vec3 const& operator[](int col, int row) const
+    constexpr V const& operator[](i32 row, i32 col) const
     {
         if (col < 0 || col >= m_width || row < 0 || row >= m_height) {
             return dummy_pixel;
@@ -65,24 +67,29 @@ public:
         return m_data[row * m_width + col];
     }
 
-    int width() const { return m_width; }
-    int height() const { return m_height; }
-    int size() const { return m_width * m_height; }
-    vec3* begin() { return m_data; }
-    vec3 const* begin() const { return m_data; }
-    vec3* end() { return m_data + size(); }
-    vec3 const* end() const { return m_data + size(); }
+    constexpr int width() const { return m_width; }
+    constexpr int height() const { return m_height; }
+    constexpr int size() const { return m_width * m_height; }
+    constexpr V* begin() { return m_data; }
+    constexpr V const* begin() const { return m_data; }
+    constexpr V* end() { return m_data + size(); }
+    constexpr V const* end() const { return m_data + size(); }
 
 private:
     i32 m_width;
     i32 m_height;
-    vec3* m_data;
-    static vec3 dummy_pixel;
+    V* m_data;
+    static V dummy_pixel;
 };
 
-vec3 canvas::dummy_pixel = vec3();
+template<vec V>
+requires(std::floating_point<typename V::scalar_type>)
+V Canvas<V>::dummy_pixel = V();
 
-u8 to_u8(f32 x)
+export using CanvasRGB = Canvas<vec3>;
+export using CanvasRGBA = Canvas<vec4>;
+
+u8 toU8(f32 x)
 {
     if (x <= 0.0f)
         return 0;
@@ -91,21 +98,92 @@ u8 to_u8(f32 x)
     return x * 255.0f + 0.5f;
 }
 
-export void write_ppm(canvas const& canvas, std::ostream& os)
+u16 toU16(f32 x)
 {
-    os << "P6\n"
-       << canvas.width() << " " << canvas.height() << "\n"
-       << 255 << "\n";
-
-    for (auto const& pixel : canvas)
-        os << to_u8(pixel.r)
-           << to_u8(pixel.g)
-           << to_u8(pixel.b);
+    if (x <= 0.0f)
+        return 0;
+    if (x >= 1.0f)
+        return 65535;
+    return x * 65535.0f + 0.5f;
 }
 
-export void write_ppm(canvas const& canvas, std::string const& file_path)
+export template<vec V>
+void writePAM(Canvas<V> const& canvas, std::ostream& os)
+{
+    char const* depth;
+    char const* tuple_type;
+
+    if constexpr (V::size_tag == 2) {
+        depth = "2";
+        tuple_type = "GRAYSCALE_ALPHA";
+    } else if constexpr (V::size_tag == 3) {
+        depth = "3";
+        tuple_type = "RGB";
+    } else if constexpr (V::size_tag == 4) {
+        depth = "4";
+        tuple_type = "RGB_ALPHA";
+    }
+
+    os << "P7\n"
+       << "WIDTH " << canvas.width() << "\n"
+       << "HEIGHT " << canvas.height() << "\n"
+       << "DEPTH " << depth << "\n"
+       << "MAXVAL 65535" << "\n"
+       << "TUPLTYPE " << tuple_type << "\n"
+       << "ENDHDR" << "\n";
+
+    for (V const& pixel : canvas) {
+        auto raster_pixel = map(pixel, toU16);
+        if constexpr (V::size_tag == 2) {
+            os << u8(raster_pixel.x >> 8) << u8(raster_pixel.x)
+               << u8(raster_pixel.y >> 8) << u8(raster_pixel.y);
+        } else if constexpr (V::size_tag == 3) {
+            os << u8(raster_pixel.r >> 8) << u8(raster_pixel.r)
+               << u8(raster_pixel.g >> 8) << u8(raster_pixel.g)
+               << u8(raster_pixel.b >> 8) << u8(raster_pixel.b);
+        } else if constexpr (V::size_tag == 4) {
+            os << u8(raster_pixel.r >> 8) << u8(raster_pixel.r)
+               << u8(raster_pixel.g >> 8) << u8(raster_pixel.g)
+               << u8(raster_pixel.b >> 8) << u8(raster_pixel.b)
+               << u8(raster_pixel.a >> 8) << u8(raster_pixel.a);
+        }
+    }
+}
+
+void writePFM(Canvas<vec3> const& canvas, std::ostream& os)
+{
+    char const* scale;
+
+    if constexpr (std::endian::native == std::endian::little) {
+        scale = "-1.0";
+    } else if constexpr (std::endian::native == std::endian::big) {
+        scale = "1.0";
+    }
+
+    os << "PF\n"
+       << canvas.width() << " " << canvas.height() << "\n"
+       << scale << "\n";
+
+    for (i32 row = canvas.height() - 1; row >= 0; --row) {
+        for (i32 col = 0; col < canvas.width(); ++col) {
+            os.write(
+                reinterpret_cast<char const*>(canvas[row, col].data()),
+                sizeof(vec3));
+        }
+    }
+}
+
+export template<vec V>
+void writePAM(Canvas<V> const& Canvas, std::string const& file_path)
 {
     std::ofstream os(file_path, std::ios::binary);
-    write_ppm(canvas, os);
+    writePAM(Canvas, os);
+}
+
+export template<vec V>
+void writePFM(Canvas<V> const& Canvas, std::string const& file_path)
+{
+    std::ofstream os(file_path, std::ios::binary);
+    writePFM(Canvas, os);
 }
 } // namespace raytracer

@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 4.0.2..4.0.2)
 
 add_compile_options(
-  -Wall -Wextra
+  -Wall
+  -Wextra
 )
 
 set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "a9e1cf81-9932-4810-974b-6eccaf14e457")
@@ -34,14 +35,14 @@ target_sources(raytracer
     src/mat.cpp
     src/meta.cpp
     src/ray.cpp
-    src/scalar.cpp
+    src/constants.cpp
     src/types.cpp
     src/vec.cpp
+    src/object.cpp
 )
 
 foreach (file
   src/mat_tests.cpp
-  src/ray_tests.cpp
   src/vec_tests.cpp
 )
   cmake_path(GET file STEM target)
@@ -55,6 +56,7 @@ endforeach()
 foreach (file
   src/circle.cpp
   src/clock.cpp
+  src/sphere.cpp
   src/exe1.cpp
 )
   cmake_path(GET file STEM target)
